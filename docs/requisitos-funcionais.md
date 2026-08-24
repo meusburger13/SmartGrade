@@ -1,6 +1,7 @@
 # Requisitos Funcionais — SmartGrade
 
 1. Gestão de Alunos
+
 | ID   | Requisito                                                                                                | Prioridade |
 | ---- | -------------------------------------------------------------------------------------------------------- | ---------- |
 | RF01 | O sistema deve permitir cadastrar um aluno, informando seus dados cadastrais obrigatórios.               | Alta       |
