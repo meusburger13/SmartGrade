@@ -1,6 +1,7 @@
 package model;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 
 public class RegistroAcademico {
     private int idRegistro;
@@ -121,4 +122,34 @@ public class RegistroAcademico {
     public void setSituacaoAcademica(String situacaoAcademica) {
         this.situacaoAcademica = situacaoAcademica;
     }
+
+    public void calcularMediaPonderada() {
+    BigDecimal p1 = notaP1 != null ? notaP1 : BigDecimal.ZERO;
+    BigDecimal p2 = notaP2 != null ? notaP2 : BigDecimal.ZERO;
+    BigDecimal tr = notaTrabalho != null ? notaTrabalho : BigDecimal.ZERO;
+    mediaFinal = p1.multiply(new BigDecimal("0.30"))
+            .add(p2.multiply(new BigDecimal("0.40")))
+            .add(tr.multiply(new BigDecimal("0.30")))
+            .setScale(2, RoundingMode.HALF_UP);
+}
+
+public void calcularFrequencia(int totalAulas) {
+    if (totalAulas <= 0) {
+        percentualFrequencia = new BigDecimal("100.00");
+        return;
+    }
+    double perc = ((totalAulas - totalFaltas) / (double) totalAulas) * 100.0;
+    if (perc < 0) perc = 0;
+    percentualFrequencia = BigDecimal.valueOf(perc).setScale(2, RoundingMode.HALF_UP);
+}
+
+public void atualizarSituacao() {
+    double media = mediaFinal != null ? mediaFinal.doubleValue() : 0.0;
+    double freq = percentualFrequencia != null ? percentualFrequencia.doubleValue() : 100.0;
+
+    if (freq < 75.0)       situacaoAcademica = "Reprovado por Falta"; // RN34/35: precede nota
+    else if (media >= 7.0) situacaoAcademica = "Aprovado";            // RN31
+    else if (media >= 5.0) situacaoAcademica = "Exame";               // RN32
+    else                   situacaoAcademica = "Reprovado por Nota";  // RN33
+}
 }

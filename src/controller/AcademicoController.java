@@ -11,6 +11,7 @@ import model.Disciplina;
 import model.RegistroAcademico;
 import model.Turma;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -80,27 +81,20 @@ public class AcademicoController {
 
     public Map<String, Object> carregarDashboard() {
         Map<String, Object> dados = new HashMap<>();
+        int totalAlunos = alunoDAO.listarTodos().size();
 
-        List<Aluno> alunos = alunoDAO.listarTodos();
-        int totalAlunos = alunos.size();
-
-        // Busca todos os registros de turmas 1 e 2 em todas as disciplinas de 1 a 5
-        List<RegistroAcademico> todosRegistros = new java.util.ArrayList<>();
-        for (int t = 1; t <= 2; t++) {
-            for (int d = 1; d <= 5; d++) {
-                List<RegistroAcademico> lista = dao.buscarPorTurmaDisciplina(t, d);
-                if (lista != null) {
-                    todosRegistros.addAll(lista);
-                }
+        // Percorre TODAS as turmas e disciplinas cadastradas (sem IDs fixos)
+        List<Disciplina> disciplinas = disciplinaDAO.listarTodos();
+        List<RegistroAcademico> todosRegistros = new ArrayList<>();
+        for (Turma t : turmaDAO.listarTodos()) {
+            for (Disciplina d : disciplinas) {
+                todosRegistros.addAll(dao.buscarPorTurmaDisciplina(t.getIdTurma(), d.getIdDisciplina()));
             }
         }
 
-        System.out.println("Total de registros acadêmicos avaliados: " + todosRegistros.size());
-
         double somaMedias = 0.0;
-        int countMedias = 0;
-        int alertasRisco = 0;
-        List<Map<String, Object>> listaRiscoTabela = new java.util.ArrayList<>();
+        int countMedias = 0, alto = 0, medio = 0;
+        List<Map<String, Object>> listaRisco = new ArrayList<>();
 
         for (RegistroAcademico reg : todosRegistros) {
             if (reg.getMediaFinal() != null) {
@@ -108,37 +102,34 @@ public class AcademicoController {
                 countMedias++;
             }
 
-            // Executa a classificação de Machine Learning
-            AnalisePreditiva analise = mlService.classificarRisco(reg);
-            String risco = (analise != null && analise.getNivelRisco() != null) ? analise.getNivelRisco().trim() : "Baixo";
-
-            System.out.println("Aluno ID " + reg.getIdAluno() + " - Disc " + reg.getIdDisciplina() + " -> Média: " + reg.getMediaFinal() + " | Risco classificado: " + risco);
-
-            // Aceita "Alto", "Critico", "Alto Risco", etc.
-            boolean isRiscoAlto = risco.toUpperCase().contains("ALTO") || risco.toUpperCase().contains("CRIT") || risco.toUpperCase().contains("MÉDIO") || risco.toUpperCase().contains("MEDIO");
-
-            if (isRiscoAlto) {
-                alertasRisco++;
-
-                Map<String, Object> item = new HashMap<>();
-                item.put("idAluno", reg.getIdAluno());
-                item.put("idDisciplina", reg.getIdDisciplina());
-                item.put("media", reg.getMediaFinal());
-                item.put("frequencia", reg.getPercentualFrequencia() != null ? reg.getPercentualFrequencia() + "%" : "N/D");
-                item.put("risco", risco);
-                item.put("recomendacao", "Acompanhamento pedagógico sugerido para risco " + risco);
-                listaRiscoTabela.add(item);
+            String risco = mlService.classificarRisco(reg).getNivelRisco();
+            String recomendacao;
+            if ("ALTO".equals(risco)) {
+                alto++;
+                recomendacao = "Acompanhamento pedagógico imediato (prioridade máxima)";
+            } else if ("MEDIO".equals(risco)) {
+                medio++;
+                recomendacao = "Monitoramento preventivo";
+            } else {
+                continue; // BAIXO não entra na tabela de atenção
             }
+
+            Map<String, Object> item = new HashMap<>();
+            item.put("idAluno", reg.getIdAluno());
+            item.put("idDisciplina", reg.getIdDisciplina());
+            item.put("media", reg.getMediaFinal());
+            item.put("frequencia", reg.getPercentualFrequencia() != null ? reg.getPercentualFrequencia() + "%" : "N/D");
+            item.put("risco", risco);
+            item.put("recomendacao", recomendacao);
+            listaRisco.add(item);
         }
 
-        double mediaGeral = countMedias > 0 ? (somaMedias / countMedias) : 0.0;
-
+        double mediaGeral = countMedias > 0 ? somaMedias / countMedias : 0.0;
         dados.put("totalAlunos", totalAlunos);
         dados.put("mediaGeral", Math.round(mediaGeral * 100.0) / 100.0);
-        dados.put("alertasAltoRisco", alertasRisco);
-        dados.put("listaRisco", listaRiscoTabela);
-
+        dados.put("alertasAltoRisco", alto);
+        dados.put("alertasMedioRisco", medio);
+        dados.put("listaRisco", listaRisco);
         return dados;
-
     }
 }

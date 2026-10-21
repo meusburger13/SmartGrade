@@ -110,8 +110,25 @@ public class PainelLancamento extends JPanel {
                     int novasFaltas = Integer.parseInt(strFaltas);
 
                     // 5. Envia para o Banco de Dados com todas as variáveis (AGORA COMBINA COM O DAO)
-                    dao.RegistroAcademicoDAO dao = new dao.RegistroAcademicoDAO();
-                    dao.atualizarNotaFalta(idAluno, notaP1, notaP2, notaTrabalho, novasFaltas);
+                    // RN17: nota só pode ir de 0 a 10
+                    if (notaP1 < 0 || notaP1 > 10 || notaP2 < 0 || notaP2 > 10
+                            || notaTrabalho < 0 || notaTrabalho > 10 || novasFaltas < 0) {
+                        javax.swing.JOptionPane.showMessageDialog(this, "Notas devem estar entre 0 e 10 e faltas não podem ser negativas.");
+                        return;
+                    }
+
+                    RegistroAcademico reg = listaRegistrosCache.get(linhaSelecionada);
+                    reg.setNotaP1(BigDecimal.valueOf(notaP1));
+                    reg.setNotaP2(BigDecimal.valueOf(notaP2));
+                    reg.setNotaTrabalho(BigDecimal.valueOf(notaTrabalho));
+                    reg.setTotalFaltas(novasFaltas);
+
+                    int totalAulas = listaDisciplinasCache.get(comboDisciplinas.getSelectedIndex()).getTotalAulas();
+                    reg.calcularMediaPonderada();
+                    reg.calcularFrequencia(totalAulas);
+                    reg.atualizarSituacao();
+
+                    controller.processarLancamento(reg);
 
                     javax.swing.JOptionPane.showMessageDialog(this, "Dados atualizados com sucesso!");
 
@@ -189,11 +206,11 @@ public class PainelLancamento extends JPanel {
                 double trab = Double.parseDouble(tableModel.getValueAt(i, 4).toString().replace(",", "."));
                 int faltas = Integer.parseInt(tableModel.getValueAt(i, 6).toString());
 
-                // Média ponderada típica: 35% P1, 35% P2, 30% Trabalho
-                double media = (p1 * 0.35) + (p2 * 0.35) + (trab * 0.30);
+                // Média ponderada típica: 30% P1, 40% P2, 30% Trabalho
+                double media = (p1 * 0.30) + (p2 * 0.40) + (trab * 0.30);
                 
                 // Exemplo: 80 horas de aula padrão
-                int totalAulas = 80;
+                int totalAulas = listaDisciplinasCache.get(comboDisciplinas.getSelectedIndex()).getTotalAulas();
                 double percFreq = ((totalAulas - faltas) / (double) totalAulas) * 100.0;
                 if (percFreq < 0) percFreq = 0;
 
@@ -201,7 +218,7 @@ public class PainelLancamento extends JPanel {
                 if (percFreq < 75.0) {
                     situacao = "Reprovado por Falta";
                 } else if (media < 5.0) {
-                    situacao = "Reprovado";
+                    situacao = "Reprovado por Nota";
                 } else if (media < 7.0) {
                     situacao = "Exame";
                 }
