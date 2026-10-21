@@ -61,7 +61,7 @@ public class TelaPrincipal extends JFrame {
         btnLancamento.addActionListener(e -> alternarPainel("LANCAMENTO"));
         btnDashboard.addActionListener(e -> alternarPainel("DASHBOARD"));
 
-        // --- COLE A LÓGICA DE CONTROLO DE ACESSO AQUI ---
+        
         String perfil = model.Sessao.perfilLogado;
 
         if ("ALUNO".equals(perfil)) {
@@ -82,7 +82,7 @@ public class TelaPrincipal extends JFrame {
             // COORDENADOR: Vê tudo. Pode iniciar no ecrã de alunos padrão.
             alternarPainel("ALUNOS");
         }
-        // ------------------------------------------------
+        
     }
 
     public void inicializarTelas() {
