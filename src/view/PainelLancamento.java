@@ -30,7 +30,6 @@ public class PainelLancamento extends JPanel {
         this.controller = new AcademicoController();
         setLayout(new BorderLayout(10, 10));
 
-        // Filtros no topo (Norte)
         JPanel painelFiltro = new JPanel(new FlowLayout(FlowLayout.LEFT, 12, 10));
         painelFiltro.setBorder(BorderFactory.createTitledBorder("Seleção de Turma e Disciplina"));
 
@@ -48,7 +47,6 @@ public class PainelLancamento extends JPanel {
 
         add(painelFiltro, BorderLayout.NORTH);
 
-        // Configuração da Tabela
         tableModel = new DefaultTableModel(
             new Object[]{"Nome do Aluno", "Nota P1", "Nota P2", "Trabalho", "Média Final", "Faltas", "% Freq.", "Situação"}, 0
         ) {
@@ -62,10 +60,9 @@ public class PainelLancamento extends JPanel {
         tabelaNotasFaltas.setRowHeight(24);
         add(new JScrollPane(tabelaNotasFaltas), BorderLayout.CENTER);
 
-        // Rodapé com botões
         JPanel painelSulCompleto = new JPanel(new BorderLayout());
-
         JPanel painelBotoes = new JPanel(new FlowLayout(FlowLayout.RIGHT, 15, 10));
+        
         JButton btnCalcular = new JButton("Recalcular Médias");
         btnCalcular.addActionListener(e -> atualizarCalculosTabela());
         painelBotoes.add(btnCalcular);
@@ -77,7 +74,6 @@ public class PainelLancamento extends JPanel {
 
         painelSulCompleto.add(painelBotoes, BorderLayout.NORTH);
 
-        // Painel de edição avulsa
         JPanel painelAcoes = new JPanel(new FlowLayout(FlowLayout.CENTER));
         JButton btnEditar = new JButton("Editar Nota/Falta do Aluno Selecionado");
         
@@ -176,10 +172,9 @@ public class PainelLancamento extends JPanel {
     public void carregarAlunosTurma() {
         tableModel.setRowCount(0);
         String perfil = model.Sessao.getInstance().getPerfil();
-        int idUsuarioLogado = model.Sessao.getInstance().getIdUsuario();
 
         if ("ALUNO".equals(perfil)) {
-            // Lógica isolada para aluno
+            // Lógica de visualização do aluno
         } else {
             int idxTurma = comboTurmas.getSelectedIndex();
             int idxDisc = comboDisciplinas.getSelectedIndex();
@@ -207,7 +202,6 @@ public class PainelLancamento extends JPanel {
     }
 
     public void atualizarCalculosTabela() {
-        // Bloqueia a edição em segurança
         if (tabelaNotasFaltas.isEditing() && tabelaNotasFaltas.getCellEditor() != null) {
             tabelaNotasFaltas.getCellEditor().stopCellEditing();
         }
@@ -216,7 +210,6 @@ public class PainelLancamento extends JPanel {
 
         for (int i = 0; i < tableModel.getRowCount(); i++) {
             try {
-                // Lê garantindo que não há NullPointerException e ignora espaços/vírgulas
                 String strP1 = String.valueOf(tableModel.getValueAt(i, 1)).replace(",", ".").trim();
                 String strP2 = String.valueOf(tableModel.getValueAt(i, 2)).replace(",", ".").trim();
                 String strTrab = String.valueOf(tableModel.getValueAt(i, 3)).replace(",", ".").trim();
@@ -227,7 +220,6 @@ public class PainelLancamento extends JPanel {
                 double trab = strTrab.isEmpty() || strTrab.equals("null") ? 0.0 : Double.parseDouble(strTrab);
                 int faltas = strFaltas.isEmpty() || strFaltas.equals("null") ? 0 : (int) Double.parseDouble(strFaltas);
 
-                // TRAVÃO VISUAL DE INTERFACE IMEDIATO
                 if (p1 > 10.0) { p1 = 10.0; tableModel.setValueAt("10.00", i, 1); avisoMostrado = true; }
                 if (p1 < 0.0)  { p1 = 0.0;  tableModel.setValueAt("0.00", i, 1); avisoMostrado = true; }
                 
@@ -237,7 +229,6 @@ public class PainelLancamento extends JPanel {
                 if (trab > 10.0) { trab = 10.0; tableModel.setValueAt("10.00", i, 3); avisoMostrado = true; }
                 if (trab < 0.0)  { trab = 0.0;  tableModel.setValueAt("0.00", i, 3); avisoMostrado = true; }
 
-                // CÁLCULO PRECISO DA MÉDIA 
                 double media = (p1 + p2 + trab) / 3.0;
                 
                 int totalAulas = 40;
@@ -253,28 +244,27 @@ public class PainelLancamento extends JPanel {
                     situacao = "Exame";
                 }
 
-                // Aplica de volta no ecrã formatado!
                 tableModel.setValueAt(BigDecimal.valueOf(media).setScale(2, RoundingMode.HALF_UP).toString(), i, 4);
                 tableModel.setValueAt(BigDecimal.valueOf(percFreq).setScale(2, RoundingMode.HALF_UP).toString(), i, 6);
                 tableModel.setValueAt(situacao, i, 7);
 
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(this, 
-                    "Erro ao calcular na linha " + (i+1) + " (Provável erro de formatação/letras).\n" + ex.getMessage(), 
-                    "Erro de Cálculo", JOptionPane.ERROR_MESSAGE);
-                return; // Se houver erro, avisa e para, em vez de continuar mudo!
+                    "Erro ao calcular na linha " + (i+1) + ".\n" + ex.getMessage(), 
+                    "Erro", JOptionPane.ERROR_MESSAGE);
+                return; 
             }
         }
 
         if (avisoMostrado) {
             JOptionPane.showMessageDialog(this, 
-                "Atenção: Algumas notas excederam o limite de 10.0 (ou inferiores a 0) e foram corrigidas automaticamente para o máximo/mínimo permitido.", 
-                "Correção Automática Aplicada", JOptionPane.WARNING_MESSAGE);
+                "Atenção: Algumas notas excederam o limite e foram corrigidas automaticamente para 10.0 (ou 0.0).", 
+                "Correção Aplicada", JOptionPane.WARNING_MESSAGE);
         }
     }
 
     public void salvarNotas() {
-        atualizarCalculosTabela(); // Recalcula e força correções ANTES de gravar
+        atualizarCalculosTabela(); 
 
         int idxTurma = comboTurmas.getSelectedIndex();
         int idxDisc = comboDisciplinas.getSelectedIndex();
@@ -308,12 +298,12 @@ public class PainelLancamento extends JPanel {
 
                 controller.processarLancamento(reg);
             } catch (Exception ex) {
-                 JOptionPane.showMessageDialog(this, "Erro crítico ao gravar linha " + (i+1) + ". " + ex.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
+                 JOptionPane.showMessageDialog(this, "Erro crítico ao gravar linha " + (i+1), "Erro", JOptionPane.ERROR_MESSAGE);
                  return;
             }
         }
 
-        JOptionPane.showMessageDialog(this, "Lançamentos salvos e processados com segurança para esta disciplina!");
-        carregarAlunosTurma(); // Limpa e puxa da base novamente para refletir o estado real
+        JOptionPane.showMessageDialog(this, "Lançamentos salvos com segurança para esta disciplina!");
+        carregarAlunosTurma(); 
     }
 }

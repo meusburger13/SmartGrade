@@ -8,7 +8,7 @@ import java.sql.Timestamp;
 public class PredicaoRiscoML {
 
     // Limiar definido no diagrama
-    public static final double LIMIAR_ALTO_RISCO = 0.65;
+    public static final double LIMIAR_ALTO_RISCO = 0.70;
 
     public AnalisePreditiva classificarRisco(RegistroAcademico registro) {
         AnalisePreditiva analise = new AnalisePreditiva();
@@ -32,7 +32,7 @@ public class PredicaoRiscoML {
 
         if (scoreCalculado >= LIMIAR_ALTO_RISCO) {
             analise.setNivelRisco("ALTO");
-        } else if (scoreCalculado >= 0.35) {
+        } else if (scoreCalculado >= 0.40) {
             analise.setNivelRisco("MEDIO");
         } else {
             analise.setNivelRisco("BAIXO");
