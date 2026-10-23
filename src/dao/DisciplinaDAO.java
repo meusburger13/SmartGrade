@@ -18,11 +18,40 @@ public class DisciplinaDAO {
                    + "nome VARCHAR(150) NOT NULL, "
                    + "codigo VARCHAR(50) NOT NULL UNIQUE"
                    + ")";
+        // Usamos Statement em vez de PreparedStatement para executar múltiplos comandos estruturais
         try (Connection conn = ConexaoBD.getConexao();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.execute();
+             Statement stmt = conn.createStatement()) {
+            
+            // 1. Cria a tabela
+            stmt.execute(sql);
+            
+            // 2. Insere as disciplinas de teste se a tabela estiver vazia
+            inserirDisciplinasPadraoSeVazio(conn);
+            
         } catch (SQLException e) {
             throw new RuntimeException("Erro ao verificar/criar a tabela disciplinas: " + e.getMessage());
+        }
+    }
+
+    private void inserirDisciplinasPadraoSeVazio(Connection conn) {
+        String sqlCheck = "SELECT COUNT(*) FROM disciplinas";
+        try (Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sqlCheck)) {
+            
+            if (rs.next() && rs.getInt(1) == 0) {
+               
+                String sqlInsert = "INSERT INTO disciplinas (id_disciplina, nome, codigo) VALUES "
+                        + "(1, 'Tecnologias Emergentes', 'TE01'), "
+                        + "(2, 'Governança em TI', 'GTI01'), "
+                        + "(3, 'Técnicas de Programação', 'TP01'), "
+                        + "(4, 'Projeto Integrador', 'PI01'), "
+                        + "(5, 'Sistemas Inteligentes', 'SI01')";
+                        
+                stmt.executeUpdate(sqlInsert);
+                System.out.println("Disciplinas padrão inseridas com sucesso na base de dados!");
+            }
+        } catch (SQLException e) {
+            System.out.println("Erro ao inserir disciplinas padrão: " + e.getMessage());
         }
     }
 

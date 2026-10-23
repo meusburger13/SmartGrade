@@ -13,16 +13,42 @@ public class TurmaDAO {
     }
 
     private void criarTabelaSeNaoExistir() {
-        String sql = "CREATE TABLE IF NOT EXISTS turmas ("
+        String sqlCreate = "CREATE TABLE IF NOT EXISTS turmas ("
                    + "id_turma INT AUTO_INCREMENT PRIMARY KEY, "
                    + "codigo VARCHAR(50) NOT NULL UNIQUE, "
                    + "periodo_semestre VARCHAR(50) NOT NULL"
                    + ")";
+                   
         try (Connection conn = ConexaoBD.getConexao();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.execute();
+             Statement stmt = conn.createStatement()) {
+            
+            // 1. Cria a tabela
+            stmt.execute(sqlCreate);
+            
+            // 2. Insere as turmas padrão
+            inserirTurmasPadraoSeVazio(conn);
+            
         } catch (SQLException e) {
             throw new RuntimeException("Erro ao verificar/criar a tabela turmas: " + e.getMessage());
+        }
+    }
+
+    private void inserirTurmasPadraoSeVazio(Connection conn) {
+        String sqlCheck = "SELECT COUNT(*) FROM turmas";
+        try (Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sqlCheck)) {
+            
+            if (rs.next() && rs.getInt(1) == 0) {
+                // Criando a turma Regular (ID 1) e a turma de DP (ID 2)
+                String sqlInsert = "INSERT INTO turmas (id_turma, codigo, periodo_semestre) VALUES "
+                        + "(1, 'ADS-4B-REGULAR', '4º Semestre'), "
+                        + "(2, 'ADS-DP-ESPECIAL', 'Dependência')";
+                        
+                stmt.executeUpdate(sqlInsert);
+                System.out.println("Turmas ADS-4B-REGULAR e ADS-DP-ESPECIAL criadas com sucesso!");
+            }
+        } catch (SQLException e) {
+            System.out.println("Erro ao inserir turmas padrão: " + e.getMessage());
         }
     }
 

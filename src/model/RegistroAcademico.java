@@ -14,13 +14,14 @@ public class RegistroAcademico {
     private int totalFaltas;
     private BigDecimal percentualFrequencia;
     private String situacaoAcademica;
+    private String nomeAluno; // Atributo adicionado para suportar a exibição do nome na JTable
 
     public RegistroAcademico() {}
 
     public RegistroAcademico(int idRegistro, int idAluno, int idDisciplina, int idTurma,
                              BigDecimal notaP1, BigDecimal notaP2, BigDecimal notaTrabalho,
                              BigDecimal mediaFinal, int totalFaltas, BigDecimal percentualFrequencia,
-                             String situacaoAcademica) {
+                             String situacaoAcademica, String nomeAluno) {
         this.idRegistro = idRegistro;
         this.idAluno = idAluno;
         this.idDisciplina = idDisciplina;
@@ -32,6 +33,7 @@ public class RegistroAcademico {
         this.totalFaltas = totalFaltas;
         this.percentualFrequencia = percentualFrequencia;
         this.situacaoAcademica = situacaoAcademica;
+        this.nomeAluno = nomeAluno;
     }
 
     public int getIdRegistro() {
@@ -120,5 +122,13 @@ public class RegistroAcademico {
 
     public void setSituacaoAcademica(String situacaoAcademica) {
         this.situacaoAcademica = situacaoAcademica;
+    }
+
+    public String getNomeAluno() {
+        return nomeAluno;
+    }
+
+    public void setNomeAluno(String nomeAluno) {
+        this.nomeAluno = nomeAluno;
     }
 }

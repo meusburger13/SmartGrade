@@ -13,16 +13,45 @@ public class TurmaAlunoDAO {
 
     private void criarTabelaSeNaoExistir() {
         // Tabela associativa com chave primária composta para evitar alunos duplicados na mesma turma
-        String sql = "CREATE TABLE IF NOT EXISTS turma_alunos ("
+        String sqlCreate = "CREATE TABLE IF NOT EXISTS turma_alunos ("
                    + "id_turma INT NOT NULL, "
                    + "id_aluno INT NOT NULL, "
                    + "PRIMARY KEY (id_turma, id_aluno)"
                    + ")";
+                   
         try (Connection conn = ConexaoBD.getConexao();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.execute();
+             Statement stmt = conn.createStatement()) {
+            
+            // 1. Cria a tabela
+            stmt.execute(sqlCreate);
+            
+            // 2. Vincula à turma padrão
+            inserirMatriculasPadraoSeVazio(conn);
+            
         } catch (SQLException e) {
             throw new RuntimeException("Erro ao verificar/criar a tabela turma_alunos: " + e.getMessage());
+        }
+    }
+
+    private void inserirMatriculasPadraoSeVazio(Connection conn) {
+        String sqlCheck = "SELECT COUNT(*) FROM turma_alunos";
+        try (Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sqlCheck)) {
+            
+            if (rs.next() && rs.getInt(1) == 0) {
+                // Matricula os alunos 1, 2, 3, 4 e 5  na turma 1
+                String sqlInsert = "INSERT INTO turma_alunos (id_turma, id_aluno) VALUES "
+                        + "(1, 1), " // Andrew
+                        + "(1, 2), " // Matheus
+                        + "(1, 3), " // Luiz Arthur
+                        + "(1, 4), " // Flávio Fernando
+                        + "(1, 5)";  // Pedro
+                        
+                stmt.executeUpdate(sqlInsert);
+                System.out.println("Alunos matriculados na turma padrão com sucesso!");
+            }
+        } catch (SQLException e) {
+            System.out.println("Erro ao inserir matrículas padrão: " + e.getMessage());
         }
     }
 

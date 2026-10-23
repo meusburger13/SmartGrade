@@ -40,8 +40,9 @@ public class PainelDashboard extends JPanel {
         JPanel painelTabela = new JPanel(new BorderLayout(5, 5));
         painelTabela.setBorder(BorderFactory.createTitledBorder("Casos Identificados pelo Modelo Preditivo (PredicaoRiscoML)"));
 
+        // Substituído "ID Aluno" por "Nome do Aluno"
         tableModel = new DefaultTableModel(
-            new Object[]{"ID Aluno", "ID Disciplina", "Média Final", "Frequência", "Nível de Risco", "Fatores / Intervenção"}, 0
+            new Object[]{"Nome do Aluno", "ID Disciplina", "Média Final", "Frequência", "Nível de Risco", "Fatores / Intervenção"}, 0
         ) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -97,16 +98,35 @@ public class PainelDashboard extends JPanel {
         @SuppressWarnings("unchecked")
         List<Map<String, Object>> listaRisco = (List<Map<String, Object>>) dados.get("listaRisco");
 
+        String perfil = model.Sessao.getInstance().getPerfil();
+        int idUsuarioLogado = model.Sessao.getInstance().getIdUsuario();
+
         if (listaRisco != null) {
             for (Map<String, Object> r : listaRisco) {
-                tableModel.addRow(new Object[]{
-                    r.get("idAluno"),
-                    r.get("idDisciplina"),
-                    r.get("media"),
-                    r.get("frequencia"),
-                    r.get("risco"),
-                    r.get("recomendacao")
-                });
+                
+                if ("ALUNO".equals(perfil)) {
+                    int idAlunoDaLinha = (int) r.get("idAluno");
+                    
+                    if (idAlunoDaLinha == idUsuarioLogado) {
+                        tableModel.addRow(new Object[]{
+                            r.get("nomeAluno"), // Exibe o nome em vez do ID
+                            r.get("idDisciplina"),
+                            r.get("media"),
+                            r.get("frequencia"),
+                            r.get("risco"),
+                            r.get("recomendacao")
+                        });
+                    }
+                } else {
+                    tableModel.addRow(new Object[]{
+                        r.get("nomeAluno"), // Exibe o nome em vez do ID
+                        r.get("idDisciplina"),
+                        r.get("media"),
+                        r.get("frequencia"),
+                        r.get("risco"),
+                        r.get("recomendacao")
+                    });
+                }
             }
         }
     }

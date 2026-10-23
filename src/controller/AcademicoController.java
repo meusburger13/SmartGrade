@@ -114,7 +114,6 @@ public class AcademicoController {
 
             System.out.println("Aluno ID " + reg.getIdAluno() + " - Disc " + reg.getIdDisciplina() + " -> Média: " + reg.getMediaFinal() + " | Risco classificado: " + risco);
 
-            // Aceita "Alto", "Critico", "Alto Risco", etc.
             boolean isRiscoAlto = risco.toUpperCase().contains("ALTO") || risco.toUpperCase().contains("CRIT") || risco.toUpperCase().contains("MÉDIO") || risco.toUpperCase().contains("MEDIO");
 
             if (isRiscoAlto) {
@@ -122,6 +121,7 @@ public class AcademicoController {
 
                 Map<String, Object> item = new HashMap<>();
                 item.put("idAluno", reg.getIdAluno());
+                item.put("nomeAluno", reg.getNomeAluno() != null ? reg.getNomeAluno() : "Aluno ID " + reg.getIdAluno());
                 item.put("idDisciplina", reg.getIdDisciplina());
                 item.put("media", reg.getMediaFinal());
                 item.put("frequencia", reg.getPercentualFrequencia() != null ? reg.getPercentualFrequencia() + "%" : "N/D");
@@ -139,6 +139,5 @@ public class AcademicoController {
         dados.put("listaRisco", listaRiscoTabela);
 
         return dados;
-
     }
 }

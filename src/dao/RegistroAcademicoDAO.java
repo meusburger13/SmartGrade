@@ -60,8 +60,77 @@ public class RegistroAcademicoDAO {
         }
     }
 
+    // Método principal chamado pelo PainelLancamento para buscar por Turma e Disciplina
+    public List<RegistroAcademico> listarPorTurmaEDisciplina(int idTurma, int idDisciplina) {
+        // 1. Verifica se já existem registros para esta turma e disciplina. Se não existirem, cria automaticamente para os alunos matriculados.
+        String sqlCheck = "SELECT COUNT(*) FROM registros_academicos WHERE id_turma = ? AND id_disciplina = ?";
+        try (Connection conn = ConexaoBD.getConexao();
+             PreparedStatement stmtCheck = conn.prepareStatement(sqlCheck)) {
+            stmtCheck.setInt(1, idTurma);
+            stmtCheck.setInt(2, idDisciplina);
+            try (ResultSet rs = stmtCheck.executeQuery()) {
+                if (rs.next() && rs.getInt(1) == 0) {
+                    String sqlAlunos = "SELECT id_aluno FROM turma_alunos WHERE id_turma = ?";
+                    try (PreparedStatement stmtAlunos = conn.prepareStatement(sqlAlunos)) {
+                        stmtAlunos.setInt(1, idTurma);
+                        try (ResultSet rsAlunos = stmtAlunos.executeQuery()) {
+                            String sqlInsert = "INSERT INTO registros_academicos (id_aluno, id_disciplina, id_turma, nota_p1, nota_p2, nota_trabalho, media_final, total_faltas, percentual_frequencia, situacao_academica) VALUES (?, ?, ?, 0.0, 0.0, 0.0, 0.0, 0, 100.0, 'Cursando')";
+                            try (PreparedStatement stmtInsert = conn.prepareStatement(sqlInsert)) {
+                                while (rsAlunos.next()) {
+                                    stmtInsert.setInt(1, rsAlunos.getInt("id_aluno"));
+                                    stmtInsert.setInt(2, idDisciplina);
+                                    stmtInsert.setInt(3, idTurma);
+                                    stmtInsert.executeUpdate();
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            System.out.println("Erro ao inicializar registros padrão: " + e.getMessage());
+        }
+
+        // 2. Retorna a lista fazendo JOIN com a tabela alunos para trazer o nome completo
+        String sql = "SELECT r.*, a.nome AS nome_aluno FROM registros_academicos r "
+                   + "JOIN alunos a ON r.id_aluno = a.id_aluno "
+                   + "WHERE r.id_turma = ? AND r.id_disciplina = ?";
+        List<RegistroAcademico> lista = new ArrayList<>();
+        
+        try (Connection conn = ConexaoBD.getConexao();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            
+            stmt.setInt(1, idTurma);
+            stmt.setInt(2, idDisciplina);
+            
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    RegistroAcademico reg = new RegistroAcademico();
+                    reg.setIdRegistro(rs.getInt("id_registro"));
+                    reg.setIdAluno(rs.getInt("id_aluno"));
+                    reg.setIdDisciplina(rs.getInt("id_disciplina"));
+                    reg.setIdTurma(rs.getInt("id_turma"));
+                    reg.setNotaP1(rs.getBigDecimal("nota_p1"));
+                    reg.setNotaP2(rs.getBigDecimal("nota_p2"));
+                    reg.setNotaTrabalho(rs.getBigDecimal("nota_trabalho"));
+                    reg.setMediaFinal(rs.getBigDecimal("media_final"));
+                    reg.setTotalFaltas(rs.getInt("total_faltas"));
+                    reg.setPercentualFrequencia(rs.getBigDecimal("percentual_frequencia"));
+                    reg.setSituacaoAcademica(rs.getString("situacao_academica"));
+                    reg.setNomeAluno(rs.getString("nome_aluno")); // Nome recuperado via JOIN
+                    
+                    lista.add(reg);
+                }
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Erro ao listar registros por turma e disciplina: " + e.getMessage());
+        }
+        return lista;
+    }
+
     public List<RegistroAcademico> listarPorAluno(int idAluno) {
-        String sql = "SELECT * FROM registros_academicos WHERE id_aluno = ?";
+        String sql = "SELECT r.*, a.nome AS nome_aluno FROM registros_academicos r "
+                   + "JOIN alunos a ON r.id_aluno = a.id_aluno WHERE r.id_aluno = ?";
         List<RegistroAcademico> lista = new ArrayList<>();
 
         try (Connection conn = ConexaoBD.getConexao();
@@ -83,13 +152,81 @@ public class RegistroAcademicoDAO {
                     reg.setTotalFaltas(rs.getInt("total_faltas"));
                     reg.setPercentualFrequencia(rs.getBigDecimal("percentual_frequencia"));
                     reg.setSituacaoAcademica(rs.getString("situacao_academica"));
+                    reg.setNomeAluno(rs.getString("nome_aluno"));
 
                     lista.add(reg);
                 }
             }
-
         } catch (SQLException e) {
             throw new RuntimeException("Erro ao listar registros acadêmicos: " + e.getMessage());
+        }
+        return lista;
+    }
+    
+    public List<RegistroAcademico> listarPorDisciplina(int idDisciplina) {
+        String sql = "SELECT r.*, a.nome AS nome_aluno FROM registros_academicos r "
+                   + "JOIN alunos a ON r.id_aluno = a.id_aluno WHERE r.id_disciplina = ?";
+        List<RegistroAcademico> lista = new ArrayList<>();
+        
+        try (Connection conn = ConexaoBD.getConexao();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            
+            stmt.setInt(1, idDisciplina);
+            
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    RegistroAcademico reg = new RegistroAcademico();
+                    reg.setIdRegistro(rs.getInt("id_registro"));
+                    reg.setIdAluno(rs.getInt("id_aluno"));
+                    reg.setIdDisciplina(rs.getInt("id_disciplina"));
+                    reg.setIdTurma(rs.getInt("id_turma"));
+                    reg.setNotaP1(rs.getBigDecimal("nota_p1"));
+                    reg.setNotaP2(rs.getBigDecimal("nota_p2"));
+                    reg.setNotaTrabalho(rs.getBigDecimal("nota_trabalho"));
+                    reg.setMediaFinal(rs.getBigDecimal("media_final"));
+                    reg.setTotalFaltas(rs.getInt("total_faltas"));
+                    reg.setPercentualFrequencia(rs.getBigDecimal("percentual_frequencia"));
+                    reg.setSituacaoAcademica(rs.getString("situacao_academica"));
+                    reg.setNomeAluno(rs.getString("nome_aluno"));
+                    
+                    lista.add(reg);
+                }
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Erro ao listar registros por disciplina: " + e.getMessage());
+        }
+        return lista;
+    }
+     
+    public List<RegistroAcademico> listarTodos() {
+        String sql = "SELECT r.*, a.nome AS nome_aluno FROM registros_academicos r "
+                   + "JOIN alunos a ON r.id_aluno = a.id_aluno";
+        List<RegistroAcademico> lista = new ArrayList<>();
+        
+        try (Connection conn = ConexaoBD.getConexao();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    RegistroAcademico reg = new RegistroAcademico();
+                    reg.setIdRegistro(rs.getInt("id_registro"));
+                    reg.setIdAluno(rs.getInt("id_aluno"));
+                    reg.setIdDisciplina(rs.getInt("id_disciplina"));
+                    reg.setIdTurma(rs.getInt("id_turma"));
+                    reg.setNotaP1(rs.getBigDecimal("nota_p1"));
+                    reg.setNotaP2(rs.getBigDecimal("nota_p2"));
+                    reg.setNotaTrabalho(rs.getBigDecimal("nota_trabalho"));
+                    reg.setMediaFinal(rs.getBigDecimal("media_final"));
+                    reg.setTotalFaltas(rs.getInt("total_faltas"));
+                    reg.setPercentualFrequencia(rs.getBigDecimal("percentual_frequencia"));
+                    reg.setSituacaoAcademica(rs.getString("situacao_academica"));
+                    reg.setNomeAluno(rs.getString("nome_aluno"));
+                    
+                    lista.add(reg);
+                }
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Erro ao listar todos os registros: " + e.getMessage());
         }
         return lista;
     }
@@ -136,31 +273,26 @@ public class RegistroAcademicoDAO {
     }
     
     public void atualizarNotaFalta(int idAluno, double notaP1, double notaP2, double notaTrabalho, int novasFaltas) {
-        
-        // 1. O Java calcula a nova Média automaticamente
         double novaMedia = (notaP1 + notaP2 + notaTrabalho) / 3.0;
-        
-        // 2. O Java calcula a nova Frequência (100% menos 2.5% por cada falta)
         double novaFrequencia = 100.0 - (novasFaltas * 2.5);
-        if (novaFrequencia < 0) novaFrequencia = 0.0; // Garante que não fica negativo
+        if (novaFrequencia < 0) novaFrequencia = 0.0;
         
-        // 3. A instrução SQL agora atualiza TUDO: notas, faltas, média e percentual!
         String sql = "UPDATE registros_academicos SET nota_p1 = ?, nota_p2 = ?, nota_trabalho = ?, total_faltas = ?, media_final = ?, percentual_frequencia = ? WHERE id_aluno = ?";
         
-        try (java.sql.Connection conn = conexao.ConexaoBD.getConexao();
-             java.sql.PreparedStatement stmt = conn.prepareStatement(sql)) {
+        try (Connection conn = ConexaoBD.getConexao();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
              
             stmt.setDouble(1, notaP1);
             stmt.setDouble(2, notaP2);
             stmt.setDouble(3, notaTrabalho);
             stmt.setInt(4, novasFaltas);
-            stmt.setDouble(5, novaMedia);       // Envia a média calculada
-            stmt.setDouble(6, novaFrequencia);  // Envia a frequência calculada
+            stmt.setDouble(5, novaMedia);       
+            stmt.setDouble(6, novaFrequencia);  
             stmt.setInt(7, idAluno);
             
             stmt.executeUpdate();
             
-        } catch (java.sql.SQLException e) {
+        } catch (SQLException e) {
             throw new RuntimeException("Erro ao atualizar notas: " + e.getMessage());
         }
     }

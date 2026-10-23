@@ -42,20 +42,31 @@ public class TelaLogin extends JFrame {
                 model.Usuario usuario = dao.autenticar(loginDigitado, senhaDigitada);
                 
                 if (usuario != null) {
-                    // 2. Se encontrou, guarda o perfil na Sessão
-                    model.Sessao.perfilLogado = usuario.getPerfil();
+                    // 1. Guarda os dados na Sessao usando o Singleton corretamente
+                    model.Sessao sessao = model.Sessao.getInstance();
+                    sessao.setIdUsuario(usuario.getId());
+                    sessao.setNome(usuario.getNome());
+                    sessao.setPerfil(usuario.getPerfil());
                     
-                    // 3. Abre a Tela Principal
+                    if ("PROFESSOR".equals(usuario.getPerfil())) {
+                        // Guarda o ID da disciplina na sessão para os filtros funcionarem
+                        sessao.setIdDisciplinaProfessor(usuario.getIdDisciplina());
+                    }
+                    // -----------------------
+
+                    // 2. Abre a Tela Principal
                     new TelaPrincipal().setVisible(true);
                     
-                    // 4. Fecha esta janela de Login
-                    this.dispose(); 
-                } else {
+                    // 3. Fecha a janela de login atual
+                    this.dispose();
+                   
+                }
+                 else {
                     // Se o utilizador não existir ou a palavra-passe estiver errada
                     javax.swing.JOptionPane.showMessageDialog(this, "Login ou palavra-passe incorretos!");
                 }
             } catch (Exception ex) {
-                // Se houver falha de ligação com o XAMPP, mostra o erro no ecrã
+                // Se houver falha de ligação com o banco de dados, mostra o erro no ecrã
                 javax.swing.JOptionPane.showMessageDialog(this, "Erro de ligação ao banco: " + ex.getMessage());
             }
         });
