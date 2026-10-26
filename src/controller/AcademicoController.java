@@ -68,13 +68,19 @@ public class AcademicoController {
     }
 
     public void processarLancamento(RegistroAcademico registro) {
-        if (registro.getIdRegistro() > 0) {
-            dao.atualizarNotasFaltas(registro);
-        } else {
-            dao.salvarRegistro(registro);
+        // Usuário logado: vai dentro do bloco de auditoria (quem lançou a nota)
+        int idUsuario = model.Sessao.getInstance().getIdUsuario();
+
+        // Grava a nota e o bloco de auditoria na mesma transação.
+        // O DAO decide entre inserir e atualizar e preenche o idRegistro no objeto.
+        boolean gravou = dao.salvarRegistro(registro, idUsuario);
+
+        if (!gravou) {
+            // Nota rejeitada (inválida) ou erro de banco: não gera análise de risco
+            return;
         }
 
-        // Predição automática de inteligência / risco
+        // Predição automática de risco (usa o idRegistro já preenchido pelo DAO)
         AnalisePreditiva analise = mlService.classificarRisco(registro);
         analiseDAO.cadastrar(analise);
     }
@@ -104,7 +110,7 @@ public class AcademicoController {
 
             AnalisePreditiva analise = mlService.classificarRisco(reg);
             String risco = (analise != null && analise.getNivelRisco() != null) ? analise.getNivelRisco().toUpperCase().trim() : "BAIXO";
-            
+
             String recomendacao;
             if (risco.contains("ALTO")) {
                 alto++;
@@ -118,7 +124,7 @@ public class AcademicoController {
 
             Map<String, Object> item = new HashMap<>();
             item.put("idAluno", reg.getIdAluno());
-            item.put("nomeAluno", reg.getNomeAluno() != null ? reg.getNomeAluno() : "Aluno ID " + reg.getIdAluno()); // Mantivemos o nome do aluno da tua versão para não quebrar a tabela visual!
+            item.put("nomeAluno", reg.getNomeAluno() != null ? reg.getNomeAluno() : "Aluno ID " + reg.getIdAluno());
             item.put("idDisciplina", reg.getIdDisciplina());
             item.put("media", reg.getMediaFinal());
             item.put("frequencia", reg.getPercentualFrequencia() != null ? reg.getPercentualFrequencia() + "%" : "N/D");
